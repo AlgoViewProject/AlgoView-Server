@@ -3,6 +3,7 @@ package AlgoView_Server.domain.news.service;
 import AlgoView_Server.domain.news.News;
 import AlgoView_Server.domain.news.dto.NewsDto;
 import AlgoView_Server.domain.news.repository.NewsRepository;
+import AlgoView_Server.global.analysis.Keyword;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +48,6 @@ public class NaverNewsService {
                     .title(newsDto.getTitle())
                     .description(newsDto.getDescription())
                     .link(newsDto.getLink())
-                    .keyword(newsDto.getKeyword())
                     .build();
 
             newsRepository.save(news);
@@ -57,7 +57,10 @@ public class NaverNewsService {
     public List<NewsDto> getAllNews() {
         List<NewsDto> newsDtos = newsRepository.findAll()
                 .stream()
-                .map(n -> new NewsDto(n.getTitle(), n.getDescription(), n.getLink(), n.getKeyword()))
+                .map(n -> {
+                    Keyword keyword = n.getKeyword();
+                    return new NewsDto(n.getTitle(), n.getDescription(), n.getLink(), keyword.getKeyword());
+                })
                 .collect(Collectors.toList());
         return newsDtos;
     }

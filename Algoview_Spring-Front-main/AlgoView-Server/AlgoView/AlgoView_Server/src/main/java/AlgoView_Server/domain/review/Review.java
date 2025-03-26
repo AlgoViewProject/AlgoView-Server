@@ -1,9 +1,6 @@
 package AlgoView_Server.domain.review;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -13,8 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Review {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "review_id")
     private Long id;
     private String name;
+
+    @Column(nullable = false)
     private String contents;
 
     public Review(String name, String contents) {

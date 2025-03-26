@@ -1,4 +1,4 @@
-package AlgoView_Server.domain.user;
+package AlgoView_Server.domain.member;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

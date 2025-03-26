@@ -1,8 +1,6 @@
 package AlgoView_Server.global.analysis;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,11 +8,19 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 public class Keyword {
-    @Id @GeneratedValue
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "keyword_id")
     private Long id;
 
+    @ManyToOne
+    @JoinColumn(name = "analysis_id")
+    Analysis analysis;
+
+    @Column(nullable = false)
     private String keyword;
 
+    @Column(nullable = false)
     private Integer frequency;
 
     public Keyword(String keyword, Integer frequency) {

@@ -1,7 +1,7 @@
 package AlgoView_Server.global.auth;
 
-import AlgoView_Server.domain.user.Role;
-import AlgoView_Server.domain.user.User;
+import AlgoView_Server.domain.member.Member;
+import AlgoView_Server.domain.member.Role;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -40,8 +40,8 @@ public class OAuthAttributes {
                 .build();
     }
 
-    public User toEntity(){
-        return User.builder()
+    public Member toEntity(){
+        return Member.builder()
                 .name(name)
                 .email(email)
                 .picture(picture)

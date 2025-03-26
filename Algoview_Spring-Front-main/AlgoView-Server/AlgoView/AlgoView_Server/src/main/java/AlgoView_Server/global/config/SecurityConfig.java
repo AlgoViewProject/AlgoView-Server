@@ -1,5 +1,5 @@
 package AlgoView_Server.global.config;
-import AlgoView_Server.domain.user.Role;
+import AlgoView_Server.domain.member.Role;
 import AlgoView_Server.global.auth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

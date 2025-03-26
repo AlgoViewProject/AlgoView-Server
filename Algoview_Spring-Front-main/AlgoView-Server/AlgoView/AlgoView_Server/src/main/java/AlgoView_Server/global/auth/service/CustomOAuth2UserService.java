@@ -1,8 +1,8 @@
 package AlgoView_Server.global.auth.service;
 
-import AlgoView_Server.domain.user.User;
-import AlgoView_Server.domain.user.dto.SessionUser;
-import AlgoView_Server.domain.user.repository.UserRepository;
+import AlgoView_Server.domain.member.Member;
+import AlgoView_Server.domain.member.dto.SessionMember;
+import AlgoView_Server.domain.member.repository.MemberRepository;
 import AlgoView_Server.global.auth.OAuthAttributes;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import java.util.Collections;
 @Transactional
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-    private final UserRepository userRepository;
+    private final MemberRepository userRepository;
     private final HttpSession httpSession;
 
     @Override
@@ -39,21 +39,21 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
 
-        User user = saveOrUpdate(attributes);
+        Member member = saveOrUpdate(attributes);
 
-        httpSession.setAttribute("user", new SessionUser(user));
+        httpSession.setAttribute("user", new SessionMember(member));
 
         return new DefaultOAuth2User(
-                Collections.singleton(new SimpleGrantedAuthority(user.getRoleKey())),
+                Collections.singleton(new SimpleGrantedAuthority(member.getRoleKey())),
                 attributes.getAttributes(),
                 attributes.getNameAttributeKey());
     }
 
-    private User saveOrUpdate(OAuthAttributes attributes){
-        User user = userRepository.findByEmail(attributes.getEmail())
+    private Member saveOrUpdate(OAuthAttributes attributes){
+        Member member = userRepository.findByEmail(attributes.getEmail())
                 .map(entity -> entity.update(attributes.getName(), attributes.getPicture()))
                 .orElse(attributes.toEntity());
 
-        return userRepository.save(user);
+        return userRepository.save(member);
     }
 }
