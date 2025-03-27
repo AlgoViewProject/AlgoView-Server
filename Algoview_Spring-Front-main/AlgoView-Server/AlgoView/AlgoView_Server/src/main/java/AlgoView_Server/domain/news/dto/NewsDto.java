@@ -1,7 +1,5 @@
 package AlgoView_Server.domain.news.dto;
 
-import AlgoView_Server.global.analysis.Analysis;
-import AlgoView_Server.global.analysis.Keyword;
 import AlgoView_Server.global.analysis.dto.KeywordResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;

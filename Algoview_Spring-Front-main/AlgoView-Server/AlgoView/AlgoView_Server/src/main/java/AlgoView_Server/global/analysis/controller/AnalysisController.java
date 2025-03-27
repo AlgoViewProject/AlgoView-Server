@@ -1,9 +1,6 @@
 package AlgoView_Server.global.analysis.controller;
 
-import AlgoView_Server.global.analysis.Analysis;
-import AlgoView_Server.global.analysis.dto.AnalysisResponseDto;
 import AlgoView_Server.global.analysis.dto.KeywordResponseDto;
-import AlgoView_Server.global.analysis.service.AnalysisService;
 import AlgoView_Server.global.analysis.service.KeywordService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -25,10 +22,7 @@ import reactor.core.publisher.Flux;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -36,9 +30,6 @@ public class AnalysisController {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @Autowired
-    private AnalysisService analysisService;
 
     @Autowired
     private KeywordService keywordService;
@@ -52,6 +43,7 @@ public class AnalysisController {
         return "upload";
     }
 
+    //분석결과 일반 요청
     @PostMapping(value = "/api/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> processAnalysi1s(
             @RequestParam("historyFile") MultipartFile historyFile,
@@ -59,7 +51,8 @@ public class AnalysisController {
 
         try {
             // 분석 ID 생성
-            //String analysisId = UUID.randomUUID().toString();
+
+//            String analysisId = UUID.randomUUID().toString();
             String analysisId = "test";
             // FastAPI 서버 URL (엔드포인트에 맞게 조정)
             String analysisUrl = "http://127.0.0.1:8000/api/v1/analysis/" + analysisId;
@@ -109,86 +102,8 @@ public class AnalysisController {
         }
     }
 
-    //analysisId = test인 경우
-    @PostMapping(value = "/api/stream/test/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> streamAnalysis(
-            @RequestParam("historyFile") MultipartFile historyFile,
-            @RequestParam("subscriptionsFile") MultipartFile subscriptionsFile) {
-
-        System.out.println("### Analysis request received with files");
-
-        try {
-            // Generate analysis ID
-            //String analysisId = UUID.randomUUID().toString();
-            String analysisId = "test";
-            System.out.println("### Generated analysis ID: " + analysisId);
-
-            // Handle history file (already JSON)
-            byte[] historyBytes = historyFile.getBytes();
-
-            // Handle subscriptions file (convert CSV to JSON if needed)
-            byte[] subscriptionsBytes;
-            if (subscriptionsFile.getOriginalFilename().toLowerCase().endsWith(".csv")) {
-                subscriptionsBytes = convertCsvToJson(subscriptionsFile);
-                System.out.println("### Converted CSV to JSON");
-            } else {
-                subscriptionsBytes = subscriptionsFile.getBytes();
-            }
-
-            // Create multipart form data
-            MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
-            bodyBuilder.part("history_file", new ByteArrayResource(historyBytes) {
-                @Override
-                public String getFilename() {
-                    return "history.json";
-                }
-            });
-            bodyBuilder.part("subscriptions_file", new ByteArrayResource(subscriptionsBytes) {
-                @Override
-                public String getFilename() {
-                    return "subscriptions.json";
-                }
-            });
-
-            // Send request to FastAPI and stream the response
-            return webClient.post()
-                    .uri("/api/v1/analysis-stream/" + analysisId)
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
-                    .retrieve()
-                    .bodyToFlux(String.class)
-                    .doOnSubscribe(s -> System.out.println("### FastAPI streaming request started for analysis: " + analysisId))
-                    .doOnNext(event -> {
-                        System.out.println("### Event received from FastAPI: " + event);
-                        try {
-                            JsonNode rootNode = objectMapper.readTree(event);
-                            JsonNode dataNode = rootNode.path("data");
-                            if (dataNode.isArray()) {
-                                JsonNode jsonNode = dataNode.get(0);
-                                if (jsonNode.has("keyword")) {
-                                    List<KeywordResponseDto> keywordResponseDtoList = objectMapper.readValue(
-                                            dataNode.toString(),
-                                            objectMapper.getTypeFactory().constructCollectionType(List.class, KeywordResponseDto.class));
-                                    keywordService.saveTest(keywordResponseDtoList);
-                                }
-                            }
-
-                        } catch (JsonProcessingException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .doOnComplete(() -> System.out.println("### FastAPI stream completed"))
-                    .doOnError(e -> System.out.println("### Error occurred: " + e.getMessage()))
-                    .doOnCancel(() -> System.out.println("### Client connection terminated"));
-        } catch (Exception e) {
-            System.out.println("### Error processing request: " + e.getMessage());
-            e.printStackTrace();
-            return Flux.error(e);
-        }
-    }
-
+    //분석 결과 실시간 요청
     //analysisId 생성 후 분석 결과 요청
-    //순환 참조 오류 발생 analysis, keyword 테이블 서로 연관관계여서 그런듯
     @PostMapping(value = "/api/stream/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> streamAnalysisById(
             @RequestParam("historyFile") MultipartFile historyFile,
@@ -198,11 +113,9 @@ public class AnalysisController {
 
         try {
             // Generate analysis ID
-            Analysis analysis = new Analysis();
-            analysisService.save(analysis);
-            AnalysisResponseDto analysisById = analysisService.getAnalysisById(analysis.getId());
-            Long analysis_id = analysisById.getId();
-            String analysisId = String.valueOf(analysis_id);
+//            String analysisId = UUID.randomUUID().toString();
+            String analysisId = "test";
+            System.out.println("### Generated analysis ID: " + analysisId);
 
             // Handle history file (already JSON)
             byte[] historyBytes = historyFile.getBytes();
@@ -254,7 +167,7 @@ public class AnalysisController {
                                             dataNode.toString(),
                                             objectMapper.getTypeFactory().constructCollectionType(List.class, KeywordResponseDto.class));
                                     for (KeywordResponseDto keywordResponseDto : keywordResponseDtoList) {
-                                        keywordResponseDto.setAnalysis_id(analysis_id);
+                                        keywordResponseDto.setAnalysis_id(analysisId);
                                     }
                                     keywordService.save(keywordResponseDtoList);
                                 }

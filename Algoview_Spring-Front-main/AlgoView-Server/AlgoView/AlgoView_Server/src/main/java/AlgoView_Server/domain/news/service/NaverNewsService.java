@@ -3,9 +3,7 @@ package AlgoView_Server.domain.news.service;
 import AlgoView_Server.domain.news.News;
 import AlgoView_Server.domain.news.dto.NewsDto;
 import AlgoView_Server.domain.news.repository.NewsRepository;
-import AlgoView_Server.global.analysis.Keyword;
 import AlgoView_Server.global.analysis.dto.KeywordResponseDto;
-import AlgoView_Server.global.analysis.repository.AnalysisJpaRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +18,6 @@ public class NaverNewsService {
 
     @Autowired
     private NewsRepository newsRepository;
-
-    @Autowired
-    private AnalysisJpaRepository analysisJpaRepository;
 
     public List<NewsDto> parseNaverNewsJson(String jsonResponse, KeywordResponseDto keywordByNews) {
         List<NewsDto> newsList = new ArrayList<>();

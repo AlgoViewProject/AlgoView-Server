@@ -3,9 +3,7 @@ package AlgoView_Server.domain.news.controller;
 import AlgoView_Server.domain.news.dto.NewsDto;
 import AlgoView_Server.domain.news.service.NaverNewsSearchService;
 import AlgoView_Server.domain.news.service.NaverNewsService;
-import AlgoView_Server.global.analysis.Analysis;
 import AlgoView_Server.global.analysis.dto.KeywordResponseDto;
-import AlgoView_Server.global.analysis.repository.AnalysisJpaRepository;
 import AlgoView_Server.global.analysis.service.KeywordService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +29,9 @@ public class NaverNewsController {
     private final NaverNewsSearchService naverNewsSearchService;
     private final NaverNewsService naverNewsService;
     private final KeywordService keywordService;
-    private final AnalysisJpaRepository analysisJpaRepository;
 
     @GetMapping("{analysisId}/news")
-    public ResponseEntity<String> setNewsbyKeywords(@PathVariable("analysisId")Long analysisId) {
+    public ResponseEntity<String> setNewsbyKeywords(@PathVariable("analysisId")String analysisId) {
         log.info("analysisId : {}", analysisId );
         String clientId = "Pa5Sa3HtfQ9xTZuyRQWP"; //애플리케이션 클라이언트 아이디
         String clientSecret = "PRkum77Vx_"; //애플리케이션 클라이언트 시크릿
@@ -61,8 +58,6 @@ public class NaverNewsController {
             String responseBody = naverNewsSearchService.get(apiURL,requestHeaders);
             List<NewsDto> newsDtoList = naverNewsService.parseNaverNewsJson(responseBody, keywordByNews);
 
-            Analysis analysis = analysisJpaRepository.findById(analysisId)
-                    .orElseThrow(() -> new EntityNotFoundException("Analysis not found with id: " + analysisId));
             for (NewsDto newsDto : newsDtoList) {
                 newsDto.setKeyword(keywordByNews);
             }

@@ -1,6 +1,6 @@
 package AlgoView_Server.domain.news;
 
-import AlgoView_Server.global.analysis.Keyword;
+import AlgoView_Server.global.domain.BaseTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @Builder
-public class News {
+public class News extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "news_id")
