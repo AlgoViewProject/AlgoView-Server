@@ -1,17 +1,17 @@
 package AlgoView_Server.global.analysis.controller;
 
+import AlgoView_Server.global.analysis.Analysis;
+import AlgoView_Server.global.analysis.dto.AnalysisResponseDto;
 import AlgoView_Server.global.analysis.dto.KeywordResponseDto;
+import AlgoView_Server.global.analysis.service.AnalysisService;
 import AlgoView_Server.global.analysis.service.KeywordService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -25,7 +25,10 @@ import reactor.core.publisher.Flux;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -33,6 +36,10 @@ public class AnalysisController {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    private AnalysisService analysisService;
+
     @Autowired
     private KeywordService keywordService;
 
@@ -102,7 +109,8 @@ public class AnalysisController {
         }
     }
 
-    @PostMapping(value = "/api/stream/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    //analysisId = test인 경우
+    @PostMapping(value = "/api/stream/test/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> streamAnalysis(
             @RequestParam("historyFile") MultipartFile historyFile,
             @RequestParam("subscriptionsFile") MultipartFile subscriptionsFile) {
@@ -158,10 +166,10 @@ public class AnalysisController {
                             if (dataNode.isArray()) {
                                 JsonNode jsonNode = dataNode.get(0);
                                 if (jsonNode.has("keyword")) {
-                                    List<KeywordResponseDto> keywordResponseDtoListt = objectMapper.readValue(
+                                    List<KeywordResponseDto> keywordResponseDtoList = objectMapper.readValue(
                                             dataNode.toString(),
                                             objectMapper.getTypeFactory().constructCollectionType(List.class, KeywordResponseDto.class));
-                                    keywordService.saveKeyword(keywordResponseDtoListt);
+                                    keywordService.saveTest(keywordResponseDtoList);
                                 }
                             }
 
@@ -179,7 +187,92 @@ public class AnalysisController {
         }
     }
 
+    //analysisId 생성 후 분석 결과 요청
+    //순환 참조 오류 발생 analysis, keyword 테이블 서로 연관관계여서 그런듯
+    @PostMapping(value = "/api/stream/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamAnalysisById(
+            @RequestParam("historyFile") MultipartFile historyFile,
+            @RequestParam("subscriptionsFile") MultipartFile subscriptionsFile) {
 
+        System.out.println("### Analysis request received with files");
+
+        try {
+            // Generate analysis ID
+            Analysis analysis = new Analysis();
+            analysisService.save(analysis);
+            AnalysisResponseDto analysisById = analysisService.getAnalysisById(analysis.getId());
+            Long analysis_id = analysisById.getId();
+            String analysisId = String.valueOf(analysis_id);
+
+            // Handle history file (already JSON)
+            byte[] historyBytes = historyFile.getBytes();
+
+            // Handle subscriptions file (convert CSV to JSON if needed)
+            byte[] subscriptionsBytes;
+            if (subscriptionsFile.getOriginalFilename().toLowerCase().endsWith(".csv")) {
+                subscriptionsBytes = convertCsvToJson(subscriptionsFile);
+                System.out.println("### Converted CSV to JSON");
+            } else {
+                subscriptionsBytes = subscriptionsFile.getBytes();
+            }
+
+            // Create multipart form data
+            MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
+            bodyBuilder.part("history_file", new ByteArrayResource(historyBytes) {
+                @Override
+                public String getFilename() {
+                    return "history.json";
+                }
+            });
+            bodyBuilder.part("subscriptions_file", new ByteArrayResource(subscriptionsBytes) {
+                @Override
+                public String getFilename() {
+                    return "subscriptions.json";
+                }
+            });
+
+            // Send request to FastAPI and stream the response
+            return webClient.post()
+                    .uri("/api/v1/analysis-stream/" + analysisId)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                    .retrieve()
+                    .bodyToFlux(String.class)
+                    .doOnSubscribe(s -> System.out.println("### FastAPI streaming request started for analysis: " + analysisId))
+                    .doOnNext(event -> {
+                        System.out.println("### Event received from FastAPI: " + event);
+                        try {
+                            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                            objectMapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+
+                            JsonNode rootNode = objectMapper.readTree(event);
+                            JsonNode dataNode = rootNode.path("data");
+                            if (dataNode.isArray()) {
+                                JsonNode jsonNode = dataNode.get(0);
+                                if (jsonNode.has("keyword")) {
+                                    List<KeywordResponseDto> keywordResponseDtoList = objectMapper.readValue(
+                                            dataNode.toString(),
+                                            objectMapper.getTypeFactory().constructCollectionType(List.class, KeywordResponseDto.class));
+                                    for (KeywordResponseDto keywordResponseDto : keywordResponseDtoList) {
+                                        keywordResponseDto.setAnalysis_id(analysis_id);
+                                    }
+                                    keywordService.save(keywordResponseDtoList);
+                                }
+                            }
+
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .doOnComplete(() -> System.out.println("### FastAPI stream completed"))
+                    .doOnError(e -> System.out.println("### Error occurred: " + e.getMessage()))
+                    .doOnCancel(() -> System.out.println("### Client connection terminated"));
+        } catch (Exception e) {
+            System.out.println("### Error processing request: " + e.getMessage());
+            e.printStackTrace();
+            return Flux.error(e);
+        }
+    }
 
     /**
      * CSV 파일을 JSON 형식으로 변환
