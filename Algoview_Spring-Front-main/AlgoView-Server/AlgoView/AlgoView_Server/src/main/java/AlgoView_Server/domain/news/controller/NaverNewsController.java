@@ -7,6 +7,7 @@ import AlgoView_Server.global.analysis.Analysis;
 import AlgoView_Server.global.analysis.dto.KeywordResponseDto;
 import AlgoView_Server.global.analysis.repository.AnalysisJpaRepository;
 import AlgoView_Server.global.analysis.service.KeywordService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -60,9 +61,10 @@ public class NaverNewsController {
             String responseBody = naverNewsSearchService.get(apiURL,requestHeaders);
             List<NewsDto> newsDtoList = naverNewsService.parseNaverNewsJson(responseBody, keywordByNews);
 
-            Analysis analysis = analysisJpaRepository.findById(analysisId).get();
+            Analysis analysis = analysisJpaRepository.findById(analysisId)
+                    .orElseThrow(() -> new EntityNotFoundException("Analysis not found with id: " + analysisId));
             for (NewsDto newsDto : newsDtoList) {
-                newsDto.setKeyword(keywordByNews, analysis);
+                newsDto.setKeyword(keywordByNews);
             }
             naverNewsService.saveNewsToDatabase(newsDtoList);
         }

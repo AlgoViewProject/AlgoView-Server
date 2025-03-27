@@ -15,10 +15,9 @@ public class NewsDto {
     private String title;
     private String description;
     private String link;
-    private Keyword keyword;
+    private String keyword;
 
-    public void setKeyword(KeywordResponseDto keywordResponseDto, Analysis analysis) {
-        this.keyword = new Keyword(keywordResponseDto.getKeyword(), keywordResponseDto.getFrequency());
-        this.keyword.setAnalysis(analysis);
+    public void setKeyword(KeywordResponseDto keywordResponseDto) {
+        this.keyword = keywordResponseDto.getKeyword();
     }
 }

@@ -26,7 +26,6 @@ public class News {
     @Column(nullable = false)
     private String link;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "keyword_id")
-    Keyword keyword;
+    @Column(nullable = false)
+    String keyword;
 }

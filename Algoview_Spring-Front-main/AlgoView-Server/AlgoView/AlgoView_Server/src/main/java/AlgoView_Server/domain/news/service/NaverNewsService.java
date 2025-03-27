@@ -26,7 +26,6 @@ public class NaverNewsService {
 
     public List<NewsDto> parseNaverNewsJson(String jsonResponse, KeywordResponseDto keywordByNews) {
         List<NewsDto> newsList = new ArrayList<>();
-        Keyword keyword = new Keyword(keywordByNews.getKeyword(), keywordByNews.getFrequency());
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(jsonResponse);
@@ -38,7 +37,7 @@ public class NaverNewsService {
                     String description = item.get("description").asText().replaceAll("<[^>]*>", ""); // HTML 태그 제거
                     String link = item.get("link").asText();
                     // keyword는 파라미터로 전달받음
-                    NewsDto newsDto = new NewsDto(title, description, link, keyword);
+                    NewsDto newsDto = new NewsDto(title, description, link, keywordByNews.getKeyword());
                     newsList.add(newsDto);
                 }
             }
