@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/Algoview_Spring-Front-main/AlgoView-Server/AlgoView/AlgoView_Server" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/../../../../../코딩/개인 프로젝트/알고뷰 프로젝트/알고뷰 찐서버/AlgoView-Server/Algoview_Spring-Front-main/AlgoView-Server/AlgoView/AlgoView_Server" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>
